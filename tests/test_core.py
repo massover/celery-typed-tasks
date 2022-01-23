@@ -1,5 +1,6 @@
 import datetime
 import decimal
+import sys
 import uuid
 
 import pytest
@@ -188,13 +189,14 @@ class TestWithHintedArgsAndKwargs:
         id = uuid.uuid4()
         assert args.delay(id=id).get() == id
 
-    def test_positional_only(self, test_app):
-        @test_app.task
-        def args(id: uuid.UUID, /):
-            return id
-
-        id = uuid.uuid4()
-        assert args.delay(id).get() == id
+    # This does not work with python 3.7 and breaks pytest ast code
+    # def test_positional_only(self, test_app):
+    #     @test_app.task
+    #     def args(id: uuid.UUID, /):
+    #         return id
+    #
+    #     id = uuid.uuid4()
+    #     assert args.delay(id).get() == id
 
 
 def test_with_task_type_hint_serialization_setting_false():

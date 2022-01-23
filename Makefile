@@ -11,4 +11,4 @@ cov:
 	open htmlcov/index.html
 
 test:
-	pytest
+	poetry run pytest

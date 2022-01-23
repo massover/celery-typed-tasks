@@ -1,3 +1,4 @@
+from __future__ import annotations
 import datetime
 import decimal
 import inspect
@@ -25,40 +26,22 @@ class TypedTask(celery.Task):
 
         hinted_args = []
         hinted_kwargs = {}
-        kwargs_annotations = self.get_kwargs_annotations()
+        annotations = self.get_annotations()
         if args:
-            args_annotations = self.get_args_annotations()
-            # keyword args passed in positionally
-            postional_kwargs_count = len(args) - len(args_annotations)
-            if postional_kwargs_count != 0:
-                annotation_values = list(kwargs_annotations.values())
-                args_annotations += annotation_values[:postional_kwargs_count]
+            args_annotations = list(annotations.values())[: len(args)]
             for arg, annotation in zip(args, args_annotations):
                 hinted_args.append(self.dump_obj(arg, annotation))
         if kwargs:
             for key, value in kwargs.items():
-                hinted_kwargs[key] = self.dump_obj(value, kwargs_annotations[key])
+                hinted_kwargs[key] = self.dump_obj(value, annotations[key])
         return super().apply_async(
             args=tuple(hinted_args), kwargs=hinted_kwargs, **options
         )
 
-    def get_args_annotations(self) -> list[typing.Any]:
-        annotations = []
-        for key, value in inspect.signature(self.run).parameters.items():
-            if value.kind in [
-                inspect.Parameter.POSITIONAL_ONLY,
-            ]:
-                annotations.append(value.annotation)
-        return annotations
-
-    def get_kwargs_annotations(self) -> typing.Dict[str, typing.Any]:
+    def get_annotations(self) -> typing.Dict[str, typing.Any]:
         annotations = {}
         for key, value in inspect.signature(self.run).parameters.items():
-            if value.kind in [
-                inspect.Parameter.KEYWORD_ONLY,
-                inspect.Parameter.POSITIONAL_OR_KEYWORD,
-            ]:
-                annotations[key] = value.annotation
+            annotations[key] = value.annotation
         return annotations
 
     def dump_obj(self, obj: typing.Any, annotation: typing.Any) -> typing.Any:
@@ -123,17 +106,10 @@ class TypedTask(celery.Task):
 
         hinted_args = []
         hinted_kwargs = {}
-        args_annotations = self.get_args_annotations()
-        kwargs_annotations = self.get_kwargs_annotations()
-
-        # keyword args passed in positionally
-        postional_kwargs_count = len(args) - len(args_annotations)
-        if postional_kwargs_count != 0:
-            args_annotations += list(kwargs_annotations.values())[
-                :postional_kwargs_count
-            ]
+        annotations = self.get_annotations()
+        args_annotations = list(annotations.values())[: len(args)]
         for arg, annotation in zip(args, args_annotations):
             hinted_args.append(self.load_obj(arg, annotation))
         for key, value in kwargs.items():
-            hinted_kwargs[key] = self.load_obj(value, kwargs_annotations[key])
+            hinted_kwargs[key] = self.load_obj(value, annotations[key])
         return super().__call__(*hinted_args, **hinted_kwargs)
