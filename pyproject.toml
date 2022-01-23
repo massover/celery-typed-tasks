@@ -5,7 +5,7 @@ description = ""
 authors = ["massover <joshm@simplebet.io>"]
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = ">=3.7,<4"
 celery = "5.*"
 pytest-mock = "^3.6.1"
 
