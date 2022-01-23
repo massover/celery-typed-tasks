@@ -1,0 +1,40 @@
+[tool.poetry]
+name = "celery-typed-tasks"
+version = "0.1.0"
+description = ""
+authors = ["massover <joshm@simplebet.io>"]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+celery = "5.*"
+pytest-mock = "^3.6.1"
+
+[tool.poetry.dev-dependencies]
+pytest = "^6.2.5"
+pytest-cov = "^3.0.0"
+mypy = "^0.931"
+celery-types = "^0.10.0"
+black = "^21.12b0"
+coverage = "^6.2"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "--durations=25 -vv -p celery.contrib.pytest"
+
+[tool.mypy]
+disallow_untyped_defs = true
+ignore_missing_imports = true
+show_error_codes = true
+exclude = "tests"
+
+[tool.coverage.run]
+branch = true
+data_file = ".coverage"
+omit = [
+    "tests/*"
+]
+
