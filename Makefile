@@ -9,3 +9,6 @@ cov:
 	poetry run pytest . --cov=celery_typed_tasks
 	poetry run coverage html
 	open htmlcov/index.html
+
+test:
+	pytest
