@@ -8,6 +8,10 @@ on:
 jobs:
   bump:
     runs-on: ubuntu-latest
+    env:
+      # By default commits are created by hte github actions bot which can not trigger a new
+      # workflow run. Using a PAT will allow the trigger for the publish job
+      GITHUB_TOKEN: ${{ secrets.PAT }}
     steps:
     - uses: actions/checkout@v2
     - name: Set up Python ${{ matrix.python-version }}
@@ -27,5 +31,5 @@ jobs:
         VERSION=$(echo $VERSION | tail -c +20)
         git commit -am "[skip ci] Bump version to ${VERSION} from GitHub Actions"
         git push origin main
-        git tag -a ${VERSION} -m "${VERSION}"
+        git tag -a v${VERSION} -m "${VERSION}"
         git push --follow-tags
