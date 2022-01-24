@@ -6,7 +6,9 @@ import pytest
 from celery import Celery
 
 import celery_typed_tasks
-from example import app, CustomObj, Dog
+from example import CustomObj
+from example import Dog
+from example import app
 
 
 class TestConfig:

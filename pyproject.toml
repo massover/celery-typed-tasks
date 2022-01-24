@@ -7,7 +7,6 @@ authors = ["massover <joshm@simplebet.io>"]
 [tool.poetry.dependencies]
 python = ">=3.7,<4"
 celery = "5.*"
-pytest-mock = "^3.6.1"
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.5"
@@ -16,6 +15,8 @@ mypy = "^0.931"
 celery-types = "^0.10.0"
 black = "^21.12b0"
 coverage = "^6.2"
+pytest-mock = "^3.6.1"
+isort = "^5.10.1"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
@@ -30,6 +31,15 @@ disallow_untyped_defs = true
 ignore_missing_imports = true
 show_error_codes = true
 exclude = "tests"
+
+[tool.isort]
+force_single_line = true
+multi_line_output = 3
+include_trailing_comma = true
+force_grid_wrap = 0
+use_parentheses = true
+line_length = 89
+skip = []
 
 [tool.coverage.run]
 branch = true
