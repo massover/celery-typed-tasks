@@ -1,0 +1,29 @@
+name: bump
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Run image
+      uses: abatilo/actions-poetry@v2.0.0
+      with:
+        poetry-version: ${{ matrix.poetry-version }}
+    - name: Build and publish
+      run: |
+        poetry version patch
+        VERSION=$(poetry version)
+        VERSION=$(echo $VERSION | tail -c +20)
+        git commit -am "[skip ci] Bump version to ${VERSION} from GitHub Actions"
+        git push origin main
+        git tag -a ${VERSION} -m "${VERSION}"
+        git push --follow-tags
