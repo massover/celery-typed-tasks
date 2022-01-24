@@ -31,5 +31,5 @@ jobs:
         VERSION=$(echo $VERSION | tail -c +20)
         git commit -am "[skip ci] Bump version to ${VERSION} from GitHub Actions"
         git push origin main
-        git tag -a v${VERSION} -m "${VERSION}"
+        git tag -a v${VERSION} -m "v${VERSION}"
         git push --follow-tags
