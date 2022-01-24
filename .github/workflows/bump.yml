@@ -13,13 +13,15 @@ jobs:
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v2
       with:
-        python-version: ${{ matrix.python-version }}
+        python-version: "3.10"
     - name: Run image
       uses: abatilo/actions-poetry@v2.0.0
       with:
-        poetry-version: ${{ matrix.poetry-version }}
+        poetry-version: "1.1.12"
     - name: Build and publish
       run: |
+        git config --global user.email "actions@githgit ub.com"
+        git config --global user.name "Bump Workflow"
         poetry version patch
         VERSION=$(poetry version)
         VERSION=$(echo $VERSION | tail -c +20)
