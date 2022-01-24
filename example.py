@@ -8,7 +8,6 @@ from celery import Celery
 
 import celery_typed_tasks
 
-
 app = Celery(
     "example",
     broker="pyamqp://guest@localhost//",

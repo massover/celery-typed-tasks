@@ -8,7 +8,9 @@ from celery import Celery
 from kombu.exceptions import EncodeError
 
 import celery_typed_tasks.core
-from example import all_objs_task, Dog, CustomObj
+from example import CustomObj
+from example import Dog
+from example import all_objs_task
 
 
 @pytest.mark.parametrize(
