@@ -20,6 +20,7 @@ jobs:
     - uses: actions/checkout@v2
       with:
         token: ${{ secrets.PAT }}
+        persist-credentials: false
     - name: Bump
       run: |
         git config --global user.email "actions@github.com"
