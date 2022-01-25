@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "celery-typed-tasks"
-version = "0.1.8"
+version = "0.1.9"
 description = ""
 authors = ["massover <joshm@simplebet.io>"]
 
