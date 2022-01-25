@@ -10,6 +10,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
+      env:
+        # By default commits are created by hte github actions bot which can not trigger a new
+        # workflow run. Using a GH_PAT will allow the trigger for the publish job
+        GITHUB_TOKEN: ${{ secrets.GH_PAT }}
       # need to use the personal access token (GH_PAT) so that this workflow can trigger other workflows.
       with:
         token: ${{ secrets.GH_PAT }}
