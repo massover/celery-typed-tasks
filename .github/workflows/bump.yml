@@ -24,8 +24,6 @@ jobs:
       env:
         PAT: ${{ secrets.PAT }}
       run: |
-        git config --global user.email "actions@githgit ub.com"
-        git config --global user.name "Bump Workflow"
         poetry version patch
         echo $PAT
         VERSION=$(poetry version)
