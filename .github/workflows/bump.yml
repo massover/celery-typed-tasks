@@ -21,10 +21,13 @@ jobs:
       with:
         poetry-version: "1.1.12"
     - name: Bump
+      env:
+        PAT: ${{ secrets.PAT }}
       run: |
         git config --global user.email "actions@githgit ub.com"
         git config --global user.name "Bump Workflow"
         poetry version patch
+        echo $PAT
         VERSION=$(poetry version)
         VERSION=$(echo $VERSION | tail -c +20)
         git commit -am "[skip ci] Bump version to ${VERSION} from GitHub Actions"
