@@ -10,6 +10,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
+      # need to use the personal access token (PAT) so that this workflow can trigger other workflows.
+      with:
+        token: ${{ secrets.PAT }}
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v2
       with:
