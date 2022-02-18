@@ -16,3 +16,11 @@ cov:
 
 test:
 	poetry run pytest
+
+bump:
+	poetry version patch
+	echo "\"\"\"\"This file is generated on bump. \"\"\"\n__version__ = \"$(shell poetry version | tail -c +20)\"" > celery_typed_tasks/_version.py
+	git commit -am "Bump version to $(shell poetry version | tail -c +20) from GitHub Actions"
+	git push origin main
+	git tag -a v$(shell poetry version | tail -c +20) -m "v$(shell poetry version | tail -c +20)"
+	git push --follow-tags
