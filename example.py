@@ -73,3 +73,11 @@ def all_objs_task(
         "none_obj": none_obj,
         "dumps_obj": dumps_obj,
     }
+
+
+@app.task()
+def alert(timestamp: datetime.datetime) -> None:
+    if 9 < timestamp.hour < 17:
+        print("Send a slack alert")
+    else:
+        print("I'll deal with it tomorrow")

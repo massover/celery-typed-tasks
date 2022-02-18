@@ -26,3 +26,12 @@ bump: patch
 	git push origin main
 	git tag -a v$(shell poetry version | tail -c +20) -m "v$(shell poetry version | tail -c +20)"
 	git push --follow-tags
+
+docserve:
+	poetry run mkdocs serve
+
+worker:
+	poetry run celery -A example worker --loglevel=INFO
+
+shell:
+	poetry run celery shell
