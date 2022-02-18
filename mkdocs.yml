@@ -1,0 +1,20 @@
+site_name: Celery Typed Tasks
+site_description: Task serialization through type hints
+docs_dir: docs
+
+theme:
+  name: 'material'
+
+repo_name: massover/celery-typed-tasks
+repo_url: https://github.com/massover/market_predictions
+edit_uri: ""
+
+
+nav:
+  - Introduction: 'index.md'
+
+markdown_extensions:
+  - mkautodoc
+  - admonition
+  - pymdownx.highlight
+  - pymdownx.superfences
