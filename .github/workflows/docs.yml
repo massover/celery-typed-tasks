@@ -25,4 +25,4 @@ jobs:
     - name: deploy mkdocs
       run: |
         poetry install
-        mkdocs gh-deploy
+        poetry run mkdocs gh-deploy
