@@ -12,36 +12,117 @@ from example import CustomObj
 from example import Dog
 from example import all_objs_task
 
+now = datetime.datetime.now()
 
-@pytest.mark.parametrize(
-    "obj, value",
-    dict(
-        none_obj=None,
-        uuid_obj=uuid.uuid4(),
-        decimal_obj=decimal.Decimal(1),
-        datetime_obj=datetime.datetime(year=2022, month=1, day=20),
-        date_obj=datetime.date(year=2022, month=1, day=20),
-        time_obj=datetime.time(hour=1, minute=1, second=1),
-        set_obj={1, 2, 3},
-        dataclass_obj=Dog(name="Bruce"),
-        dict_obj={"hello": "world!"},
-        list_obj=[1, 2, 3],
-        int_obj=1,
-        str_obj="hello world!",
-        bool_obj=True,
-        float_obj=3.14,
-        dumps_obj=CustomObj("hello world!"),
-    ).items(),
-)
-def test_with_kwargs(mocker, obj, value):
-    load_obj_spy = mocker.spy(celery_typed_tasks.core.TypedTask, "load_obj")
-    dump_obj_spy = mocker.spy(celery_typed_tasks.core.TypedTask, "dump_obj")
-    kwargs = {}
-    kwargs[obj] = value
-    all_objs = all_objs_task.delay(**kwargs).get()
-    assert all_objs[obj] == value
-    assert load_obj_spy.call_count == 1
-    assert dump_obj_spy.call_count == 1
+
+def DogFactory(name, dob=None):
+    if dob is None:
+        dob = datetime.datetime.now()
+    return Dog(name=name, dob=dob)
+
+
+class TestSerde:
+    @pytest.mark.parametrize(
+        "obj, value",
+        dict(
+            none_obj=None,
+            uuid_obj=uuid.uuid4(),
+            decimal_obj=decimal.Decimal(1),
+            datetime_obj=datetime.datetime(year=2022, month=1, day=20),
+            date_obj=datetime.date(year=2022, month=1, day=20),
+            time_obj=datetime.time(hour=1, minute=1, second=1),
+            dict_obj={"hello": "world!"},
+            int_obj=1,
+            str_obj="hello world!",
+            bool_obj=True,
+            float_obj=3.14,
+            dumps_obj=CustomObj("hello world!"),
+        ).items(),
+    )
+    def test_with_kwargs(self, mocker, obj, value):
+        load_obj_spy = mocker.spy(celery_typed_tasks.core.TypedTask, "load_obj")
+        dump_obj_spy = mocker.spy(celery_typed_tasks.core.TypedTask, "dump_obj")
+        kwargs = {}
+        kwargs[obj] = value
+        all_objs = all_objs_task.delay(**kwargs).get()
+        assert all_objs[obj] == value
+        assert load_obj_spy.call_count == 1
+        assert dump_obj_spy.call_count == 1
+
+    @pytest.mark.parametrize(
+        "obj, value",
+        dict(
+            dataclass_obj=DogFactory(name="Bruce"),
+        ).items(),
+    )
+    def test_dataclass_serialization(self, mocker, obj, value):
+        load_obj_spy = mocker.spy(celery_typed_tasks.core.TypedTask, "load_obj")
+        dump_obj_spy = mocker.spy(celery_typed_tasks.core.TypedTask, "dump_obj")
+        kwargs = {}
+        kwargs[obj] = value
+        all_objs = all_objs_task.delay(**kwargs).get()
+        assert all_objs[obj] == value
+        # 1 to get the whole payload
+        # 2 for deserializing the 2 fields on the Dog class
+        # 3 total
+        assert load_obj_spy.call_count == 3
+        assert dump_obj_spy.call_count == 3
+
+    @pytest.mark.parametrize(
+        "obj, value",
+        dict(
+            list_obj=[DogFactory(name="Bruce"), DogFactory(name="Gus")],
+        ).items(),
+    )
+    def test_list_with_complex_types(self, mocker, obj, value):
+        load_obj_spy = mocker.spy(celery_typed_tasks.core.TypedTask, "load_obj")
+        dump_obj_spy = mocker.spy(celery_typed_tasks.core.TypedTask, "dump_obj")
+        kwargs = {}
+        kwargs[obj] = value
+        all_objs = all_objs_task.delay(**kwargs).get()
+        assert all_objs[obj] == value
+        # 1 to get the whole payload
+        # 3 for each dog
+        #   1 for the dog obj
+        #   2 for each field
+        # 7 total
+        assert load_obj_spy.call_count == 7
+        assert dump_obj_spy.call_count == 7
+
+    @pytest.mark.parametrize(
+        "obj, value",
+        dict(
+            naive_set_obj={1, 2, 3}, literal_set_obj={1, 2, 3}, naive_list_obj=[1, 2, 3]
+        ).items(),
+    )
+    def test_naive_objs(self, mocker, obj, value):
+        load_obj_spy = mocker.spy(celery_typed_tasks.core.TypedTask, "load_obj")
+        dump_obj_spy = mocker.spy(celery_typed_tasks.core.TypedTask, "dump_obj")
+        kwargs = {}
+        kwargs[obj] = value
+        all_objs = all_objs_task.delay(**kwargs).get()
+        assert all_objs[obj] == value
+        assert load_obj_spy.call_count == 1
+        assert dump_obj_spy.call_count == 1
+
+    @pytest.mark.parametrize(
+        "obj, value",
+        dict(
+            set_obj={datetime.datetime(2020, 6, 6), datetime.datetime(2022, 1, 1)},
+        ).items(),
+    )
+    def test_set_with_complex_types(self, mocker, obj, value):
+        load_obj_spy = mocker.spy(celery_typed_tasks.core.TypedTask, "load_obj")
+        dump_obj_spy = mocker.spy(celery_typed_tasks.core.TypedTask, "dump_obj")
+        kwargs = {}
+        kwargs[obj] = value
+        all_objs = all_objs_task.delay(**kwargs).get()
+        assert all_objs[obj] == value
+        # 1 to get the whole payload
+        # 2 for deserializing each set item in the list and set
+        # 3 total
+        assert load_obj_spy.call_count == 3
+        assert dump_obj_spy.call_count == 3
 
 
 class TestAllObjsTypeHintSerializationDisabled:
@@ -84,7 +165,7 @@ class TestAllObjsTypeHintSerializationDisabled:
         "obj, value",
         dict(
             set_obj={1, 2, 3},
-            dataclass_obj=Dog(name="Bruce"),
+            dataclass_obj=Dog(name="Bruce", dob=datetime.datetime.now()),
             dumps_obj=CustomObj("hello world!"),
         ).items(),
     )

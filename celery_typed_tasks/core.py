@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import datetime
 import decimal
 import inspect
@@ -47,24 +45,81 @@ class TypedTask(celery.Task):
             annotations[key] = value.annotation
         return annotations
 
+    def issubclass(
+        self, x: typing.Any, A_tuple: typing.Union[typing.Any, typing.Tuple]
+    ) -> bool:
+        """
+        1. Allows check for subclass types
+        2. Handles an error case on GenericAlias
+
+        >>> issubclass("123", str)
+            Traceback (most recent call last):
+              File "<stdin>", line 1, in <module>
+            TypeError: issubclass() arg 1 must be a class
+        """
+        try:
+            return issubclass(x, A_tuple)
+        except TypeError:
+            return False
+
+    def get_origin(self, annotation: typing.Any) -> typing.Optional[typing.Any]:
+        """
+        https://docs.python.org/3.9/library/stdtypes.html?highlight=__origin__#genericalias.__origin__
+
+        All parameterized generics implement special read-only attributes.
+
+        >>> list[int].__origin__
+        <class 'list'>
+        """
+        return getattr(annotation, "__origin__", None)
+
+    def get_args(self, annotation: typing.Any) -> typing.Tuple:
+        """
+        https://docs.python.org/3.9/library/stdtypes.html?highlight=__origin__#genericalias.__args__
+
+        This attribute is a tuple (possibly of length 1) of generic types passed to the
+        original __class_getitem__() of the generic class:
+        >>> dict[str, list[int]].__args__
+        (<class 'str'>, list[int])
+        """
+        return getattr(annotation, "__args__", tuple())
+
     def dump_obj(self, obj: typing.Any, annotation: typing.Any) -> typing.Any:
-        if issubclass(annotation, uuid.UUID):
+        args = self.get_args(annotation)
+        origin = self.get_origin(annotation)
+        if self.issubclass(annotation, uuid.UUID):
             return str(obj)
-        elif issubclass(annotation, decimal.Decimal):
+        elif self.issubclass(annotation, decimal.Decimal):
             return str(obj)
-        elif issubclass(annotation, datetime.datetime):
+        elif self.issubclass(annotation, datetime.datetime):
             return obj.isoformat()
-        elif issubclass(annotation, datetime.date):
+        elif self.issubclass(annotation, datetime.date):
             return obj.isoformat()
-        elif issubclass(annotation, datetime.time):
+        elif self.issubclass(annotation, datetime.time):
             return obj.isoformat()
-        elif issubclass(annotation, set):
+        elif self.issubclass(annotation, set):
             return list(obj)
         elif is_dataclass(annotation):
-            return asdict(obj)
-        elif issubclass(annotation, (dict, list, int, str, bool, float)):
+            # Each field could be a complex type itself that requires serialization
+            field_types = typing.get_type_hints(annotation)
+            return {
+                key: self.dump_obj(value, field_types[key])
+                for key, value in asdict(obj).items()
+            }
+        elif self.issubclass(annotation, (dict, list, int, str, bool, float)):
             # pass through normally json serializable structures
             return obj
+        elif origin and origin in [list, set]:
+            # Each nested object could be a complex type itself that requires serialization
+            arg = next(iter(args), None)
+            if not args or isinstance(arg, typing.TypeVar):
+                # The nested object has no type specified
+                # eg. obj: list or obj: typing.List
+                if origin is set:
+                    return list(obj)
+                return obj
+
+            return [self.dump_obj(item, annotation.__args__[0]) for item in obj]
         elif annotation is inspect._empty:
             # if type hint serialization is enabled but the type hint is empty,
             # pass the item through as is
@@ -76,23 +131,45 @@ class TypedTask(celery.Task):
             return obj.dump()
 
     def load_obj(self, obj: typing.Any, annotation: typing.Any) -> typing.Any:
-        if issubclass(annotation, uuid.UUID):
+        args = self.get_args(annotation)
+        origin = self.get_origin(annotation)
+        if self.issubclass(annotation, uuid.UUID):
             return uuid.UUID(obj)
-        elif issubclass(annotation, decimal.Decimal):
+        elif self.issubclass(annotation, decimal.Decimal):
             return decimal.Decimal(obj)
-        elif issubclass(annotation, datetime.datetime):
+        elif self.issubclass(annotation, datetime.datetime):
             return datetime.datetime.fromisoformat(obj)
-        elif issubclass(annotation, datetime.date):
+        elif self.issubclass(annotation, datetime.date):
             return datetime.date.fromisoformat(obj)
-        elif issubclass(annotation, datetime.time):
+        elif self.issubclass(annotation, datetime.time):
             return datetime.time.fromisoformat(obj)
-        elif issubclass(annotation, set):
+        elif self.issubclass(annotation, set):
             return set(obj)
         elif is_dataclass(annotation):
-            return annotation(**obj)
-        elif issubclass(annotation, (dict, list, int, str, bool, float)):
+            # Each field could be a complex type itself that requires deserialization
+            field_types = typing.get_type_hints(annotation)
+            return annotation(
+                **{
+                    key: self.load_obj(value, field_types[key])
+                    for key, value in obj.items()
+                }
+            )
+        elif self.issubclass(annotation, (dict, list, int, str, bool, float)):
             # pass through normally json serializable structures
             return obj
+        elif origin and origin in [list, set]:
+            # Each nested object could be a complex type itself that requires deserialization
+            arg = next(iter(args), None)
+            if isinstance(arg, typing.TypeVar) or arg is None:
+                # The nested object has no type specified
+                # eg. obj: list or obj: typing.List
+                objs = obj
+            else:
+                objs = (self.load_obj(item, annotation.__args__[0]) for item in obj)
+            if annotation.__origin__ == list:
+                return list(objs)
+            else:
+                return set(objs)
         elif annotation is inspect._empty:
             # if type hint serialization is enabled but the type hint is empty,
             # pass the item through as is
