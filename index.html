@@ -402,7 +402,7 @@
 </code></pre></div>
 <p>If your next thought is</p>
 <blockquote>
-<p>I don't understand what this is doing, isn't that what celery does?</p>
+<p>I don't understand what this is doing. Isn't that what celery does?</p>
 </blockquote>
 <p>Remove the <code>celery_typed_tasks.TypedTask</code> from the application initialization and re-run the code.</p>
 <div class="highlight"><pre><span></span><code><span class="n">app</span> <span class="o">=</span> <span class="n">Celery</span><span class="p">(</span>
@@ -434,7 +434,7 @@ AttributeError: &#39;str&#39; object has no attribute &#39;hour&#39;
 <h2 id="summary">Summary</h2>
 <p>With type hints, we can have a secure, cross language solution and get complex arguments passed to our tasks. 
 This package tries to bring run time type hinting meta programming that is becoming popular 
-with libraries like <a href="https://fastapi.tiangolo.com/">fastapi</a> to Celery. With the type hints that you use your
+with libraries like <a href="https://fastapi.tiangolo.com/">fastapi</a> to Celery. With the type hints that you use with your
 tasks already, we can prevent some common serialization errors and build more things on top of task introspection.</p>
 <h2 id="a-note-about-pickle">A note about pickle</h2>
 <p>By default, celery uses <a href="https://docs.celeryproject.org/en/stable/userguide/calling.html?highlight=json%20serialization#serializers">json serialization</a> for task arguments.
