@@ -64,7 +64,7 @@ In the worker logs, you should see
 
 If your next thought is
 
-> I don't understand what this is doing, isn't that what celery does?
+> I don't understand what this is doing. Isn't that what celery does?
 
 Remove the `celery_typed_tasks.TypedTask` from the application initialization and re-run the code.
 
@@ -109,7 +109,7 @@ AttributeError: 'str' object has no attribute 'hour'
 
 With type hints, we can have a secure, cross language solution and get complex arguments passed to our tasks. 
 This package tries to bring run time type hinting meta programming that is becoming popular 
-with libraries like [fastapi](https://fastapi.tiangolo.com/) to Celery. With the type hints that you use your
+with libraries like [fastapi](https://fastapi.tiangolo.com/) to Celery. With the type hints that you use with your
 tasks already, we can prevent some common serialization errors and build more things on top of task introspection.
 
 ## A note about pickle
