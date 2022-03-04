@@ -8,6 +8,10 @@ authors = ["massover <joshm@simplebet.io>"]
 python = ">=3.7,<4"
 celery = ">5"
 
+mkdocs = { version = "*", optional = true}
+mkdocs-material = { version = "*", optional = true}
+mkautodoc = { version = "*", optional = true}
+
 [tool.poetry.dev-dependencies]
 pytest = "*"
 pytest-cov = "*"
@@ -17,9 +21,13 @@ black = "*"
 coverage = "*"
 pytest-mock = "*"
 isort = "*"
-mkdocs = "*"
-mkdocs-material = "*"
-mkautodoc = "*"
+
+[tool.poetry.extras]
+docs = [
+    "mkdocs",
+    "mkdocs-material",
+    "mkautodoc",
+]
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
