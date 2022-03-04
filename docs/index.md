@@ -132,3 +132,4 @@ app.config_from_object(Config)
 
 While it fixes the issue, the architecture is open to [security concerns](https://docs.celeryproject.org/en/stable/userguide/security.html#guide-security) and it's limited to python producers only.
 With just type hints that you're already using, we can have the robust object serialization our code needs with a secure data format over the wire.
+
