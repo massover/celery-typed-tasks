@@ -6,7 +6,6 @@ import pytest
 from celery import Celery
 
 import celery_typed_tasks
-from example import CustomObj
 from example import Dog
 from example import app
 
@@ -20,18 +19,30 @@ def pytest_configure():
 
 
 @pytest.fixture
-def test_app():
-    app = Celery(
-        "no-type-hint-serialization",
-        broker="pyamqp://guest@localhost//",
-        task_cls=celery_typed_tasks.core.TypedTask,
-    )
+def test_app_factory():
+    def create_app(**kwargs):
+        defaults = dict(
+            broker="pyamqp://guest@localhost//",
+            task_cls=celery_typed_tasks.core.TypedTask,
+        )
+        defaults.update(kwargs)
+        app = Celery(
+            "no-type-hint-serialization",
+            **defaults,
+        )
 
-    class Config:
-        task_always_eager = True
+        class Config:
+            task_always_eager = True
 
-    app.config_from_object(Config)
-    return app
+        app.config_from_object(Config)
+        return app
+
+    return create_app
+
+
+@pytest.fixture
+def test_app(test_app_factory):
+    return test_app_factory()
 
 
 @pytest.fixture
@@ -54,7 +65,6 @@ def type_hint_serialization_disabled_task(test_app):
         str_obj: str = None,
         bool_obj: bool = None,
         float_obj: float = None,
-        dumps_obj: CustomObj = None,
     ) -> dict:
         return {
             "uuid_obj": uuid_obj,
@@ -71,7 +81,6 @@ def type_hint_serialization_disabled_task(test_app):
             "bool_obj": bool_obj,
             "float_obj": float_obj,
             "none_obj": none_obj,
-            "dumps_obj": dumps_obj,
         }
 
     return type_hint_serialization_disabled

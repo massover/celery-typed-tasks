@@ -1,13 +1,9 @@
 name: deploy github pages
 
-#on:
-#  push:
-#    tags:
-#    - '*'
 on:
   push:
-    branches:
-      - main
+    tags:
+    - '*'
 
 jobs:
   deploy:

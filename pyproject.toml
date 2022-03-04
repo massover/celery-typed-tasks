@@ -41,7 +41,7 @@ addopts = "--durations=25 -vv -p celery.contrib.pytest"
 disallow_untyped_defs = true
 ignore_missing_imports = true
 show_error_codes = true
-exclude = "tests"
+exclude = ["tests", "scratch/*"]
 
 [tool.isort]
 force_single_line = true

@@ -1,6 +1,5 @@
 import datetime
 import decimal
-import sys
 import uuid
 
 import pytest
@@ -8,7 +7,6 @@ from celery import Celery
 from kombu.exceptions import EncodeError
 
 import celery_typed_tasks.core
-from example import CustomObj
 from example import Dog
 from example import all_objs_task
 
@@ -36,12 +34,11 @@ class TestSerde:
             str_obj="hello world!",
             bool_obj=True,
             float_obj=3.14,
-            dumps_obj=CustomObj("hello world!"),
         ).items(),
     )
     def test_with_kwargs(self, mocker, obj, value):
-        load_obj_spy = mocker.spy(celery_typed_tasks.core.TypedTask, "load_obj")
-        dump_obj_spy = mocker.spy(celery_typed_tasks.core.TypedTask, "dump_obj")
+        load_obj_spy = mocker.spy(celery_typed_tasks.core.TypedTask, "_load_obj")
+        dump_obj_spy = mocker.spy(celery_typed_tasks.core.TypedTask, "_dump_obj")
         kwargs = {}
         kwargs[obj] = value
         all_objs = all_objs_task.delay(**kwargs).get()
@@ -56,8 +53,8 @@ class TestSerde:
         ).items(),
     )
     def test_dataclass_serialization(self, mocker, obj, value):
-        load_obj_spy = mocker.spy(celery_typed_tasks.core.TypedTask, "load_obj")
-        dump_obj_spy = mocker.spy(celery_typed_tasks.core.TypedTask, "dump_obj")
+        load_obj_spy = mocker.spy(celery_typed_tasks.core.TypedTask, "_load_obj")
+        dump_obj_spy = mocker.spy(celery_typed_tasks.core.TypedTask, "_dump_obj")
         kwargs = {}
         kwargs[obj] = value
         all_objs = all_objs_task.delay(**kwargs).get()
@@ -75,8 +72,8 @@ class TestSerde:
         ).items(),
     )
     def test_list_with_complex_types(self, mocker, obj, value):
-        load_obj_spy = mocker.spy(celery_typed_tasks.core.TypedTask, "load_obj")
-        dump_obj_spy = mocker.spy(celery_typed_tasks.core.TypedTask, "dump_obj")
+        load_obj_spy = mocker.spy(celery_typed_tasks.core.TypedTask, "_load_obj")
+        dump_obj_spy = mocker.spy(celery_typed_tasks.core.TypedTask, "_dump_obj")
         kwargs = {}
         kwargs[obj] = value
         all_objs = all_objs_task.delay(**kwargs).get()
@@ -96,8 +93,8 @@ class TestSerde:
         ).items(),
     )
     def test_naive_objs(self, mocker, obj, value):
-        load_obj_spy = mocker.spy(celery_typed_tasks.core.TypedTask, "load_obj")
-        dump_obj_spy = mocker.spy(celery_typed_tasks.core.TypedTask, "dump_obj")
+        load_obj_spy = mocker.spy(celery_typed_tasks.core.TypedTask, "_load_obj")
+        dump_obj_spy = mocker.spy(celery_typed_tasks.core.TypedTask, "_dump_obj")
         kwargs = {}
         kwargs[obj] = value
         all_objs = all_objs_task.delay(**kwargs).get()
@@ -112,8 +109,8 @@ class TestSerde:
         ).items(),
     )
     def test_set_with_complex_types(self, mocker, obj, value):
-        load_obj_spy = mocker.spy(celery_typed_tasks.core.TypedTask, "load_obj")
-        dump_obj_spy = mocker.spy(celery_typed_tasks.core.TypedTask, "dump_obj")
+        load_obj_spy = mocker.spy(celery_typed_tasks.core.TypedTask, "_load_obj")
+        dump_obj_spy = mocker.spy(celery_typed_tasks.core.TypedTask, "_dump_obj")
         kwargs = {}
         kwargs[obj] = value
         all_objs = all_objs_task.delay(**kwargs).get()
@@ -166,7 +163,6 @@ class TestAllObjsTypeHintSerializationDisabled:
         dict(
             set_obj={1, 2, 3},
             dataclass_obj=Dog(name="Bruce", dob=datetime.datetime.now()),
-            dumps_obj=CustomObj("hello world!"),
         ).items(),
     )
     def test_encoding_error_objs(

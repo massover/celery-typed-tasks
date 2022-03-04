@@ -109,13 +109,15 @@ AttributeError: 'str' object has no attribute 'hour'
 
 With type hints, we can have a secure, cross language solution and get complex arguments passed to our tasks. 
 This package tries to bring run time type hinting meta programming that is becoming popular 
-with libraries like [fastapi](https://fastapi.tiangolo.com/) to Celery. With the type hints that you use with your
+with libraries like [FastAPI](https://fastapi.tiangolo.com/) to Celery. With the type hints that you use with your
 tasks already, we can prevent some common serialization errors and build more things on top of task introspection.
 
 ## A note about pickle
 
 By default, celery uses [json serialization](https://docs.celeryproject.org/en/stable/userguide/calling.html?highlight=json%20serialization#serializers) for task arguments.
-A keen reader might say `just switch to pickle`!
+A keen reader might say 
+
+> just switch to pickle!
 
 ```python 
 app = Celery(
@@ -132,3 +134,4 @@ app.config_from_object(Config)
 
 While it fixes the issue, the architecture is open to [security concerns](https://docs.celeryproject.org/en/stable/userguide/security.html#guide-security) and it's limited to python producers only.
 With just type hints that you're already using, we can have the robust object serialization our code needs with a secure data format over the wire.
+

@@ -109,3 +109,5 @@ venv.bak/
 # SimpleBet extras
 .DS_Store
 .idea
+
+scratch/*
