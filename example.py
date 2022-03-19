@@ -21,21 +21,6 @@ class Dog:
     dob: datetime.datetime
 
 
-class CustomObj:
-    def __init__(self, s: str):
-        self.s = s
-
-    def dump(self) -> str:
-        return self.s
-
-    @classmethod
-    def load(cls, s: str) -> "CustomObj":
-        return cls(s=s)
-
-    def __eq__(self, other: typing.Any) -> bool:
-        return self.s == other.s
-
-
 NoneType = type(None)
 
 
@@ -58,7 +43,6 @@ def all_objs_task(
     str_obj: str = None,
     bool_obj: bool = None,
     float_obj: float = None,
-    dumps_obj: CustomObj = None,
 ) -> dict:
     return {
         "uuid_obj": uuid_obj,
@@ -78,7 +62,6 @@ def all_objs_task(
         "bool_obj": bool_obj,
         "float_obj": float_obj,
         "none_obj": none_obj,
-        "dumps_obj": dumps_obj,
     }
 
 

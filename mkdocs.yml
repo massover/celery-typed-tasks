@@ -12,6 +12,8 @@ edit_uri: ""
 
 nav:
   - Introduction: 'index.md'
+  - Usage: 'usage.md'
+  - Example: 'example.md'
 
 markdown_extensions:
   - mkautodoc
