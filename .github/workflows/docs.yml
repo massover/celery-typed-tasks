@@ -24,6 +24,6 @@ jobs:
         poetry-version: "1.1.12"
     - name: deploy mkdocs
       run: |
-        git pull origin gh-pages
+        git pull
         poetry install
         poetry run mkdocs gh-deploy
