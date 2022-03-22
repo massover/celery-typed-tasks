@@ -1,4 +1,4 @@
-# Example
+# Examples
 
 ## FastAPI
 
@@ -181,7 +181,7 @@ urlpatterns = [
 ]
 
 celery_app = Celery(
-    "djangoexample",
+    "example",
     broker="pyamqp://guest@localhost//",
     task_cls=celery_typed_tasks.TypedTask,
 )
