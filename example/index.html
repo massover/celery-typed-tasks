@@ -273,6 +273,13 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#django" class="md-nav__link">
+    Django
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -310,6 +317,13 @@
         <li class="md-nav__item">
   <a href="#fastapi" class="md-nav__link">
     FastAPI
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#django" class="md-nav__link">
+    Django
   </a>
   
 </li>
@@ -398,6 +412,130 @@ an api for tasks with custom task serialization and a little meta programming.</
 
 
 <span class="n">register_task_views</span><span class="p">(</span><span class="n">celery_app</span><span class="p">,</span> <span class="n">fast_api_app</span><span class="p">)</span>
+</code></pre></div>
+<h2 id="django">Django</h2>
+<p>The following is a single module example of a django and celery application. Since there's no magic
+to convert type hints to forms, the meta programming here is incomplete.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+
+<span class="kn">from</span> <span class="nn">celery</span> <span class="kn">import</span> <span class="n">Celery</span>
+<span class="kn">from</span> <span class="nn">django</span> <span class="kn">import</span> <span class="n">forms</span>
+<span class="kn">from</span> <span class="nn">django.conf</span> <span class="kn">import</span> <span class="n">settings</span>
+<span class="kn">from</span> <span class="nn">django.core.wsgi</span> <span class="kn">import</span> <span class="n">get_wsgi_application</span>
+<span class="kn">from</span> <span class="nn">django.http</span> <span class="kn">import</span> <span class="n">HttpResponse</span>
+<span class="kn">from</span> <span class="nn">django.http</span> <span class="kn">import</span> <span class="n">HttpResponseRedirect</span>
+<span class="kn">from</span> <span class="nn">django.template</span> <span class="kn">import</span> <span class="n">Context</span>
+<span class="kn">from</span> <span class="nn">django.template</span> <span class="kn">import</span> <span class="n">Template</span>
+<span class="kn">from</span> <span class="nn">django.urls</span> <span class="kn">import</span> <span class="n">path</span>
+<span class="kn">from</span> <span class="nn">django.utils.crypto</span> <span class="kn">import</span> <span class="n">get_random_string</span>
+<span class="kn">from</span> <span class="nn">django.views.generic</span> <span class="kn">import</span> <span class="n">RedirectView</span>
+
+<span class="kn">import</span> <span class="nn">celery_typed_tasks</span>
+
+<span class="n">settings</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span>
+    <span class="n">DEBUG</span><span class="o">=</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;DEBUG&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;1&quot;</span><span class="p">),</span>
+    <span class="n">ALLOWED_HOSTS</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;*&quot;</span><span class="p">],</span>
+    <span class="n">ROOT_URLCONF</span><span class="o">=</span><span class="vm">__name__</span><span class="p">,</span>
+    <span class="n">SECRET_KEY</span><span class="o">=</span><span class="n">get_random_string</span><span class="p">(</span><span class="mi">50</span><span class="p">),</span>
+    <span class="n">TEMPLATES</span><span class="o">=</span><span class="p">[{</span><span class="s1">&#39;BACKEND&#39;</span><span class="p">:</span> <span class="s1">&#39;django.template.backends.django.DjangoTemplates&#39;</span><span class="p">,}],</span>
+<span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">TaskForm</span><span class="p">(</span><span class="n">forms</span><span class="o">.</span><span class="n">Form</span><span class="p">):</span>
+    <span class="n">field_lookup</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="nb">str</span><span class="p">:</span> <span class="n">forms</span><span class="o">.</span><span class="n">CharField</span><span class="p">(),</span>
+        <span class="nb">int</span><span class="p">:</span> <span class="n">forms</span><span class="o">.</span><span class="n">IntegerField</span><span class="p">(),</span>
+    <span class="p">}</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">task</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;task&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">annotation</span> <span class="ow">in</span> <span class="n">celery_typed_tasks</span><span class="o">.</span><span class="n">get_annotations</span><span class="p">(</span><span class="n">task</span><span class="o">.</span><span class="n">run</span><span class="p">)</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">field</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">field_lookup</span><span class="p">[</span><span class="n">annotation</span><span class="p">]</span>
+            <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                <span class="n">field</span> <span class="o">=</span> <span class="n">forms</span><span class="o">.</span><span class="n">CharField</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fields</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span>
+
+
+<span class="k">def</span> <span class="nf">register_task_views</span><span class="p">(</span><span class="n">celery_app</span><span class="p">,</span> <span class="n">urlpatterns</span><span class="p">):</span>
+    <span class="n">url_names</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">task_name</span><span class="p">,</span> <span class="n">task</span> <span class="ow">in</span> <span class="n">celery_app</span><span class="o">.</span><span class="n">tasks</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="c1"># Only create api endpoints for tasks defined in the celery_app skip built in celery tasks</span>
+        <span class="k">if</span> <span class="n">task_name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;celery&quot;</span><span class="p">):</span>
+            <span class="k">continue</span>
+
+        <span class="c1"># The view must be defined in a closure. Otherwise `task` will be passed by reference during the iteration.</span>
+        <span class="k">def</span> <span class="nf">view_factory</span><span class="p">(</span><span class="n">task</span><span class="p">):</span>
+            <span class="k">def</span> <span class="nf">task_view</span><span class="p">(</span><span class="n">request</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">request</span><span class="o">.</span><span class="n">method</span> <span class="o">==</span> <span class="s1">&#39;POST&#39;</span><span class="p">:</span>
+                    <span class="n">form</span> <span class="o">=</span> <span class="n">TaskForm</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">POST</span><span class="p">,</span> <span class="n">task</span><span class="o">=</span><span class="n">task</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">form</span><span class="o">.</span><span class="n">is_valid</span><span class="p">():</span>
+                        <span class="n">task</span><span class="o">.</span><span class="n">delay</span><span class="p">(</span><span class="o">**</span><span class="n">form</span><span class="o">.</span><span class="n">cleaned_data</span><span class="p">)</span>
+                        <span class="k">return</span> <span class="n">HttpResponseRedirect</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">form</span> <span class="o">=</span> <span class="n">TaskForm</span><span class="p">(</span><span class="n">task</span><span class="o">=</span><span class="n">task</span><span class="p">)</span>
+
+                <span class="n">html</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">                &lt;h1&gt; {{ task_name }} &lt;/h1&gt;</span>
+<span class="s2">                &lt;form method=&quot;post&quot;&gt;</span>
+<span class="s2">                {{ form.as_p }}</span>
+<span class="s2">                &lt;input type=&quot;submit&quot; value=&quot;Submit&quot;&gt;</span>
+<span class="s2">                &lt;/form&gt;</span>
+<span class="s2">                &quot;&quot;&quot;</span>
+                <span class="n">template</span> <span class="o">=</span> <span class="n">Template</span><span class="p">(</span><span class="n">html</span><span class="p">)</span>
+                <span class="n">context</span> <span class="o">=</span> <span class="n">Context</span><span class="p">({</span><span class="s2">&quot;form&quot;</span><span class="p">:</span> <span class="n">form</span><span class="p">,</span> <span class="s2">&quot;task_name&quot;</span><span class="p">:</span> <span class="n">task</span><span class="o">.</span><span class="n">name</span><span class="p">})</span>
+                <span class="k">return</span> <span class="n">HttpResponse</span><span class="p">(</span><span class="n">template</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="n">context</span><span class="p">))</span>
+
+            <span class="k">return</span> <span class="n">task_view</span>
+
+        <span class="n">view</span> <span class="o">=</span> <span class="n">view_factory</span><span class="p">(</span><span class="n">task</span><span class="p">)</span>
+        <span class="n">url_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;tasks-</span><span class="si">{</span><span class="n">task_name</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="n">urlpatterns</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">path</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;tasks/</span><span class="si">{</span><span class="n">task_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">view</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">url_name</span><span class="p">))</span>
+        <span class="n">url_names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">url_name</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">task_list_view</span><span class="p">(</span><span class="n">request</span><span class="p">):</span>
+        <span class="n">html</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">        &lt;h1&gt;Tasks&lt;/h1&gt;</span>
+<span class="s2">        &lt;ul&gt;</span>
+<span class="s2">        {</span><span class="si">% f</span><span class="s2">or url_name in url_names %}</span>
+<span class="s2">            &lt;li&gt;&lt;a href=&quot;{</span><span class="si">% u</span><span class="s2">rl url_name %}&quot;&gt;{{ url_name }}&lt;/a&gt;&lt;/li&gt;</span>
+<span class="s2">        {</span><span class="si">% e</span><span class="s2">ndfor %}</span>
+<span class="s2">        &lt;/ul&gt;</span>
+<span class="s2">        &quot;&quot;&quot;</span>
+        <span class="n">template</span> <span class="o">=</span> <span class="n">Template</span><span class="p">(</span><span class="n">html</span><span class="p">)</span>
+        <span class="n">context</span> <span class="o">=</span> <span class="n">Context</span><span class="p">({</span><span class="s2">&quot;url_names&quot;</span><span class="p">:</span> <span class="n">url_names</span><span class="p">})</span>
+        <span class="k">return</span> <span class="n">HttpResponse</span><span class="p">(</span><span class="n">template</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="n">context</span><span class="p">))</span>
+
+    <span class="n">urlpatterns</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">path</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;tasks&quot;</span><span class="p">,</span> <span class="n">task_list_view</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;task-list&quot;</span><span class="p">))</span>
+
+
+<span class="n">urlpatterns</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">path</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">RedirectView</span><span class="o">.</span><span class="n">as_view</span><span class="p">(</span><span class="n">pattern_name</span><span class="o">=</span><span class="s2">&quot;task-list&quot;</span><span class="p">)),</span>
+<span class="p">]</span>
+
+<span class="n">celery_app</span> <span class="o">=</span> <span class="n">Celery</span><span class="p">(</span>
+    <span class="s2">&quot;djangoexample&quot;</span><span class="p">,</span>
+    <span class="n">broker</span><span class="o">=</span><span class="s2">&quot;pyamqp://guest@localhost//&quot;</span><span class="p">,</span>
+    <span class="n">task_cls</span><span class="o">=</span><span class="n">celery_typed_tasks</span><span class="o">.</span><span class="n">TypedTask</span><span class="p">,</span>
+<span class="p">)</span>
+
+
+<span class="nd">@celery_app</span><span class="o">.</span><span class="n">task</span>
+<span class="k">def</span> <span class="nf">add</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">x</span> <span class="o">+</span> <span class="n">y</span>
+
+
+<span class="n">register_task_views</span><span class="p">(</span><span class="n">celery_app</span><span class="p">,</span> <span class="n">urlpatterns</span><span class="p">)</span>
+
+<span class="n">app</span> <span class="o">=</span> <span class="n">get_wsgi_application</span><span class="p">()</span>
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">django.core.management</span> <span class="kn">import</span> <span class="n">execute_from_command_line</span>
+
+    <span class="n">execute_from_command_line</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">)</span>
 </code></pre></div>
 
               
