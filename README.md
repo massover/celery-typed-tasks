@@ -7,5 +7,5 @@ Celery Typed Tasks provides argument serialization for complex objects using [ty
 
 ## Documentation
 
-Please see [docs](https://massover.github.io/celery-typed-tasks)
+Please see the [docs](https://massover.github.io/celery-typed-tasks)
 
